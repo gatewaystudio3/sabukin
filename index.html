@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金種計算機 (目標設定可)</title>
+    <style>
+        /* 全体のスタイル設定 */
+        body {
+            font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #444;
+        }
+
+        /* 目標金額設定エリア */
+        .target-setting-area {
+            background-color: #eef2f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 1px solid #dae1e7;
+        }
+
+        .target-label {
+            font-weight: bold;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        #target-input {
+            width: 120px;
+            padding: 8px;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: right;
+            border: 2px solid #ccc;
+            border-radius: 4px;
+            color: #0056b3;
+        }
+
+        /* テーブルのデザイン */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th {
+            background-color: #eee;
+            padding: 10px;
+            text-align: center;
+            font-size: 14px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        td {
+            padding: 10px 5px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        /* 金種ラベル */
+        .label-col {
+            font-weight: bold;
+            text-align: right;
+            width: 30%;
+        }
+
+        /* 入力欄共通 */
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: right;
+            box-sizing: border-box;
+        }
+        
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* 個別合計金額 */
+        .subtotal-col {
+            text-align: right;
+            width: 35%;
+            font-family: monospace;
+            font-size: 16px;
+        }
+
+        /* 合計欄のデザイン */
+        .total-section {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+            color: white;
+            font-weight: bold;
+        }
+
+        .total-label {
+            font-size: 14px;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .total-amount {
+            font-size: 32px;
+        }
+
+        /* 判定用のクラス */
+        .status-match {
+            background-color: #28a745; /* 緑色 */
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+        }
+
+        .status-mismatch {
+            background-color: #dc3545; /* 赤色 */
+            box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>金種計算機</h1>
+
+    <div class="target-setting-area">
+        <label class="target-label" for="target-input">目標金額:</label>
+        <input type="number" id="target-input" value="150000"> 円
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>金種</th>
+                <th>枚数</th>
+                <th>金額</th>
+            </tr>
+        </thead>
+        <tbody id="currency-table">
+            </tbody>
+    </table>
+
+    <div id="total-display" class="total-section status-mismatch">
+        <span class="total-label">合計金額</span>
+        <span id="grand-total" class="total-amount">0</span> 円
+    </div>
+</div>
+
+<script>
+    // 金種のリスト
+    const denominations = [10000, 5000, 2000, 1000, 500, 100, 50, 10, 5, 1];
+    
+    const tableBody = document.getElementById('currency-table');
+    const grandTotalEl = document.getElementById('grand-total');
+    const totalDisplayBox = document.getElementById('total-display');
+    const targetInput = document.getElementById('target-input'); // 目標金額の入力欄
+
+    // 1. テーブル行の生成
+    denominations.forEach(val => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td class="label-col">${val.toLocaleString()}円</td>
+            <td>
+                <input type="number" min="0" data-value="${val}" class="count-input" placeholder="0">
+            </td>
+            <td class="subtotal-col">
+                <span id="subtotal-${val}">0</span>
+            </td>
+        `;
+        tableBody.appendChild(tr);
+    });
+
+    const countInputs = document.querySelectorAll('.count-input');
+
+    // 2. 計算と判定ロジック
+    function calculateAndValidate() {
+        let currentTotal = 0;
+
+        // 各行の計算
+        countInputs.forEach(input => {
+            const count = parseInt(input.value) || 0;
+            const value = parseInt(input.getAttribute('data-value'));
+            const subtotal = count * value;
+
+            document.getElementById(`subtotal-${value}`).textContent = subtotal.toLocaleString();
+            currentTotal += subtotal;
+        });
+
+        // 合計表示の更新
+        grandTotalEl.textContent = currentTotal.toLocaleString();
+
+        // 目標金額の取得
+        const targetAmount = parseInt(targetInput.value) || 0;
+
+        // 判定（色が変化）
+        if (currentTotal === targetAmount) {
+            totalDisplayBox.classList.remove('status-mismatch');
+            totalDisplayBox.classList.add('status-match');
+        } else {
+            totalDisplayBox.classList.remove('status-match');
+            totalDisplayBox.classList.add('status-mismatch');
+        }
+    }
+
+    // 3. イベント設定
+    
+    // 金種の枚数が変わった時
+    countInputs.forEach(input => {
+        input.addEventListener('input', calculateAndValidate);
+        input.addEventListener('focus', function() { this.select(); });
+    });
+
+    // 目標金額が変わった時も再判定する
+    targetInput.addEventListener('input', calculateAndValidate);
+    targetInput.addEventListener('focus', function() { this.select(); });
+
+    // 初期実行（最初の色判定のため）
+    calculateAndValidate();
+
+</script>
+
+</body>
+</html>
