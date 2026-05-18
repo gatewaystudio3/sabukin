@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>金種計算機 (目標設定可)</title>
+    <title>スタジオ業務システム</title>
     <style>
-        /* 全体のスタイル設定 */
+        /* 全体のスタイル設定（ご提示の金種計算機を優先） */
         body {
             font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
             background-color: #f4f4f9;
@@ -20,8 +20,9 @@
             padding: 20px 30px;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            max-width: 500px;
+            max-width: 1000px; /* スタジオ集計が崩れないよう、最大幅を拡張 */
             width: 100%;
+            box-sizing: border-box;
         }
 
         h1 {
@@ -31,7 +32,151 @@
             color: #444;
         }
 
-        /* 目標金額設定エリア */
+        /* ----------------------------------
+           追加・変更したスタイル（タブ機能用）
+        ---------------------------------- */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            background-color: #eef2f5;
+            color: #666;
+            border-radius: 6px 6px 0 0;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background-color: #fff;
+            color: #0056b3;
+            border-color: #ddd;
+            border-bottom: 2px solid #fff;
+            margin-bottom: -12px; /* 下線と一体化させる調整 */
+            padding-bottom: 11px;
+        }
+
+        .tab-content {
+            display: none; /* 初期状態はすべて非表示 */
+        }
+
+        .tab-content.active {
+            display: block; /* activeクラスがついたコンテンツのみ表示 */
+        }
+
+        /* ----------------------------------
+           スタジオ集計システム用のスタイル
+        ---------------------------------- */
+        .studio-area {
+            max-width: 100%;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* ご提示の汎用input[type="text"]との衝突を避ける記述 */
+        .input-area input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        .btn-action {
+            padding: 10px 20px;
+            font-size: 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: background 0.2s;
+        }
+
+        .btn-clear { background-color: #dc3545; }
+        .btn-clear:hover { background-color: #bd2130; }
+        .btn-copy { background-color: #28a745; margin-bottom: 20px; }
+        .btn-copy:hover { background-color: #218838; }
+        
+        .excel-table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 25px;
+            border: 1px solid #ccc;
+        }
+
+        /* 金種計算機のテーブルスタイルと競合させないための専用クラス */
+        .excel-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+        }
+
+        .excel-table th, .excel-table td {
+            border: 1px solid #bbb;
+            text-align: center;
+            font-size: 14px;
+            padding: 0; /* マス目一杯に入力欄を広げるため */
+        }
+
+        .excel-table th {
+            background-color: #eee;
+            color: #333;
+            padding: 8px 4px;
+            font-weight: bold;
+            border-bottom: 2px solid #bbb;
+        }
+
+        .excel-table td input {
+            width: 100%;
+            box-sizing: border-box;
+            border: none;
+            text-align: center;
+            padding: 12px 2px;
+            font-size: 16px;
+            background-color: #fff;
+            color: #000;
+        }
+
+        .excel-table td input:read-only {
+            outline: none;
+        }
+        
+        .summary-area {
+            background-color: #eef2f5;
+            border-left: 5px solid #0056b3;
+            padding: 15px;
+            border-radius: 0 4px 4px 0;
+            font-size: 15px;
+            text-align: left;
+        }
+
+        .summary-area p {
+            margin: 5px 0;
+        }
+
+        .summary-value {
+            font-weight: bold;
+            color: #0056b3;
+            font-size: 18px;
+        }
+
+        /* ----------------------------------
+           金種計算機用のオリジナルスタイル
+        ---------------------------------- */
         .target-setting-area {
             background-color: #eef2f5;
             padding: 15px;
@@ -58,14 +203,13 @@
             color: #0056b3;
         }
 
-        /* テーブルのデザイン */
-        table {
+        .money-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
         }
 
-        th {
+        .money-table th {
             background-color: #eee;
             padding: 10px;
             text-align: center;
@@ -73,19 +217,17 @@
             border-bottom: 2px solid #ddd;
         }
 
-        td {
+        .money-table td {
             padding: 10px 5px;
             border-bottom: 1px solid #f0f0f0;
         }
 
-        /* 金種ラベル */
         .label-col {
             font-weight: bold;
             text-align: right;
             width: 30%;
         }
 
-        /* 入力欄共通 */
         input[type="number"] {
             width: 100%;
             padding: 8px;
@@ -102,7 +244,6 @@
             margin: 0;
         }
 
-        /* 個別合計金額 */
         .subtotal-col {
             text-align: right;
             width: 35%;
@@ -110,7 +251,6 @@
             font-size: 16px;
         }
 
-        /* 合計欄のデザイン */
         .total-section {
             text-align: center;
             padding: 20px;
@@ -130,56 +270,201 @@
             font-size: 32px;
         }
 
-        /* 判定用のクラス */
         .status-match {
-            background-color: #28a745; /* 緑色 */
+            background-color: #28a745;
             box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
         }
 
         .status-mismatch {
-            background-color: #dc3545; /* 赤色 */
+            background-color: #dc3545;
             box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+        }
+
+        /* 金種計算機を中央寄せで見やすく制限するためのラッパー */
+        .money-wrapper {
+            max-width: 500px;
+            margin: 0 auto;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>金種計算機</h1>
-
-    <div class="target-setting-area">
-        <label class="target-label" for="target-input">目標金額:</label>
-        <input type="number" id="target-input" value="150000"> 円
+    <!-- タブ切り替えボタン -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('studio-tab', this)">スタジオ文字集計</button>
+        <button class="tab-btn" onclick="switchTab('money-tab', this)">金種計算機</button>
     </div>
-    
-    <table>
-        <thead>
-            <tr>
-                <th>金種</th>
-                <th>枚数</th>
-                <th>金額</th>
-            </tr>
-        </thead>
-        <tbody id="currency-table">
-            </tbody>
-    </table>
 
-    <div id="total-display" class="total-section status-mismatch">
-        <span class="total-label">合計金額</span>
-        <span id="grand-total" class="total-amount">0</span> 円
+    <!-- ==========================================
+         タブ1: スタジオ文字集計システム
+         ========================================== -->
+    <div id="studio-tab" class="tab-content active">
+        <div class="studio-area">
+            <div class="input-area">
+                <input type="text" id="inputString" placeholder="ここに文字列を入力してください (例: bgpws1230cd)" oninput="aggregate()">
+                <button class="btn-action btn-clear" onclick="clearInput()">クリア</button>
+            </div>
+
+            <button class="btn-action btn-copy" onclick="copyToClipboard()">エクセル用にコピー</button>
+
+            <div class="excel-table-wrapper">
+                <table class="excel-table">
+                    <thead>
+                        <tr>
+                            <th>バンド (b)</th>
+                            <th>個人1 (1)</th>
+                            <th>個人2 (2)</th>
+                            <th>パック (p)</th>
+                            <th>学割 (g)</th>
+                            <th>スタッフ (w)</th>
+                            <th>紹介 (s)</th>
+                            <th>pt30 (3)</th>
+                            <th>pt100 (0)</th>
+                            <th>ダンス (d)</th>
+                            <th>キャンセル (c)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="text" id="cell-b" readonly></td>
+                            <td><input type="text" id="cell-1" readonly></td>
+                            <td><input type="text" id="cell-2" readonly></td>
+                            <td><input type="text" id="cell-p" readonly></td>
+                            <td><input type="text" id="cell-g" readonly></td>
+                            <td><input type="text" id="cell-w" readonly></td>
+                            <td><input type="text" id="cell-s" readonly></td>
+                            <td><input type="text" id="cell-3" readonly></td>
+                            <td><input type="text" id="cell-0" readonly></td>
+                            <td><input type="text" id="cell-d" readonly></td>
+                            <td><input type="text" id="cell-c" readonly></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="summary-area">
+                <p>【ポイント利用合計】</p>
+                <p>合計利用件数: <span id="pt-count" class="summary-value">0</span> 件 (30pt: <span id="pt30-count">0</span>件 / 100pt: <span id="pt100-count">0</span>件)</p>
+                <p>合計消費ポイント: <span id="pt-total" class="summary-value">0</span> pt</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         タブ2: 金種計算機
+         ========================================== -->
+    <div id="money-tab" class="tab-content">
+        <div class="money-wrapper">
+            <div class="target-setting-area">
+                <label class="target-label" for="target-input">目標金額:</label>
+                <input type="number" id="target-input" value="150000"> 円
+            </div>
+            
+            <table class="money-table">
+                <thead>
+                    <tr>
+                        <th>金種</th>
+                        <th>枚数</th>
+                        <th>金額</th>
+                    </tr>
+                </thead>
+                <tbody id="currency-table">
+                    <!-- JavaScriptで動的生成 -->
+                </tbody>
+            </table>
+
+            <div id="total-display" class="total-section status-mismatch">
+                <span class="total-label">合計金額</span>
+                <span id="grand-total" class="total-amount">0</span> 円
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    // 金種のリスト
+    /* ==========================================
+       共通ロジック：タブ切り替え
+       ========================================== */
+    function switchTab(tabId, button) {
+        // すべてのコンテンツを非表示にする
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        // すべてのタブボタンの選択状態を解除
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        // 対象のコンテンツとボタンをアクティブにする
+        document.getElementById(tabId).classList.add('active');
+        button.classList.add('active');
+    }
+
+
+    /* ==========================================
+       機能1：スタジオ集計システム のスクリプト
+       ========================================== */
+    const targetChars = ['b', '1', '2', 'p', 'g', 'w', 's', '3', '0', 'd', 'c'];
+
+    function aggregate() {
+        const inputStr = document.getElementById('inputString').value;
+        let counts = {};
+        targetChars.forEach(char => counts[char] = 0);
+
+        for (let i = 0; i < inputStr.length; i++) {
+            let char = inputStr[i];
+            if (counts.hasOwnProperty(char)) {
+                counts[char]++;
+            }
+        }
+
+        targetChars.forEach(char => {
+            const cell = document.getElementById(`cell-${char}`);
+            cell.value = counts[char] > 0 ? counts[char] : '';
+        });
+
+        const count30 = counts['3'];
+        const count100 = counts['0'];
+        const totalPtCount = count30 + count100;
+        const totalPtAmount = (count30 * 30) + (count100 * 100);
+
+        document.getElementById('pt30-count').innerText = count30;
+        document.getElementById('pt100-count').innerText = count100;
+        document.getElementById('pt-count').innerText = totalPtCount;
+        document.getElementById('pt-total').innerText = totalPtAmount;
+    }
+
+    function clearInput() {
+        document.getElementById('inputString').value = '';
+        aggregate();
+        document.getElementById('inputString').focus();
+    }
+
+    function copyToClipboard() {
+        const rowData = targetChars.map(char => {
+            return document.getElementById(`cell-${char}`).value;
+        });
+        const textToCopy = rowData.join('\t');
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            alert('エクセル用のデータをクリップボードにコピーしました！\nエクセル上で貼り付け（Ctrl+V）してください。');
+        }).catch(err => {
+            alert('コピーに失敗しました。', err);
+        });
+    }
+
+
+    /* ==========================================
+       機能2：金種計算機 のスクリプト
+       ========================================== */
     const denominations = [10000, 5000, 2000, 1000, 500, 100, 50, 10, 5, 1];
-    
     const tableBody = document.getElementById('currency-table');
     const grandTotalEl = document.getElementById('grand-total');
     const totalDisplayBox = document.getElementById('total-display');
-    const targetInput = document.getElementById('target-input'); // 目標金額の入力欄
+    const targetInput = document.getElementById('target-input');
 
-    // 1. テーブル行の生成
+    // 金種テーブルの生成
     denominations.forEach(val => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -196,11 +481,9 @@
 
     const countInputs = document.querySelectorAll('.count-input');
 
-    // 2. 計算と判定ロジック
     function calculateAndValidate() {
         let currentTotal = 0;
 
-        // 各行の計算
         countInputs.forEach(input => {
             const count = parseInt(input.value) || 0;
             const value = parseInt(input.getAttribute('data-value'));
@@ -210,13 +493,9 @@
             currentTotal += subtotal;
         });
 
-        // 合計表示の更新
         grandTotalEl.textContent = currentTotal.toLocaleString();
-
-        // 目標金額の取得
         const targetAmount = parseInt(targetInput.value) || 0;
 
-        // 判定（色が変化）
         if (currentTotal === targetAmount) {
             totalDisplayBox.classList.remove('status-mismatch');
             totalDisplayBox.classList.add('status-match');
@@ -226,21 +505,16 @@
         }
     }
 
-    // 3. イベント設定
-    
-    // 金種の枚数が変わった時
     countInputs.forEach(input => {
         input.addEventListener('input', calculateAndValidate);
         input.addEventListener('focus', function() { this.select(); });
     });
 
-    // 目標金額が変わった時も再判定する
     targetInput.addEventListener('input', calculateAndValidate);
     targetInput.addEventListener('focus', function() { this.select(); });
 
-    // 初期実行（最初の色判定のため）
+    // 金種計算機の初期判定実行
     calculateAndValidate();
-
 </script>
 
 </body>
